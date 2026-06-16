@@ -1,101 +1,53 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400&family=JetBrains+Mono:wght@400;500&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-*, *::before, *::after { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+@layer base {
+  :root {
+    --color-bg: #FFFFFF;
+    --color-surface: #F9FAFB;
+    --color-card: #FFFFFF;
+    --color-border: #E5E7EB;
+    --color-text-primary: #111827;
+    --color-text-secondary: #4B5563;
+    --color-text-muted: #9CA3AF;
+    --color-accent: #3B82F6;
+    --color-accent-hover: #2563EB;
+    --color-success: #10B981;
+    --color-warning: #F59E0B;
+    --color-error: #EF4444;
+  }
 
-body {
-  font-family: 'Inter', system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  overflow: hidden;
+  .dark {
+    --color-bg: #090909;
+    --color-surface: #161616;
+    --color-card: #1B1B1B;
+    --color-border: #2A2A2A;
+    --color-text-primary: #FAFAFA;
+    --color-text-secondary: #D6D6D6;
+    --color-text-muted: #8A8A8A;
+    --color-accent: #D4AF37;
+    --color-accent-hover: #E6C65B;
+    --color-success: #10B981;
+    --color-warning: #F59E0B;
+    --color-error: #EF4444;
+  }
+
+  * {
+    border-color: #E5E7EB;
+  }
+
+  .dark * {
+    border-color: #2A2A2A;
+  }
+
+  body {
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
 }
 
-/* ── Themes ─────────────────────────────────────────────────────── */
-body.light {
-  --bg:        #f5f7fa;
-  --surface:   #ffffff;
-  --surface-2: #f0f2f7;
-  --border:    #e4e8ef;
-  --border-2:  #d0d7e3;
-  --text-1:    #0f1623;
-  --text-2:    #4b5775;
-  --text-3:    #8892a8;
-  --indigo:    #4f46e5;
-  --indigo-bg: #eef0fd;
-  --indigo-border: #c7cdf9;
-  background: var(--bg);
-  color: var(--text-1);
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
-
-body.dark {
-  --bg:        #080c14;
-  --surface:   #0e1420;
-  --surface-2: #141c2c;
-  --border:    #1e2a3e;
-  --border-2:  #2a3855;
-  --text-1:    #e8edf8;
-  --text-2:    #7e8fa8;
-  --text-3:    #4a5a72;
-  --indigo:    #6366f1;
-  --indigo-bg: rgba(99,102,241,0.10);
-  --indigo-border: rgba(99,102,241,0.25);
-  background: var(--bg);
-  color: var(--text-1);
-}
-
-/* ── Scrollbars ──────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 9px; }
-::-webkit-scrollbar-thumb:hover { background: var(--indigo); }
-
-/* ── Typography ─────────────────────────────────────────────────── */
-.font-mono { font-family: 'JetBrains Mono', monospace; }
-
-/* ── Resize handle ───────────────────────────────────────────────── */
-.resize-handle {
-  width: 1px;
-  flex-shrink: 0;
-  cursor: col-resize;
-  user-select: none;
-  touch-action: none;
-  background: var(--border);
-  transition: background 0.15s, width 0.1s;
-  position: relative;
-}
-.resize-handle::after {
-  content: '';
-  position: absolute;
-  top: 0; bottom: 0;
-  left: -4px; right: -4px;
-}
-.resize-handle:hover, .resize-handle:active {
-  background: var(--indigo);
-  width: 2px;
-}
-
-/* ── Animations ─────────────────────────────────────────────────── */
-.clue-reveal { animation: clue-in 0.22s ease-out; }
-@keyframes clue-in {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-.typing-dot { animation: tdot 1.2s infinite ease-in-out; }
-.typing-dot:nth-child(2) { animation-delay: 0.16s; }
-.typing-dot:nth-child(3) { animation-delay: 0.32s; }
-@keyframes tdot {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-  30% { transform: translateY(-5px); opacity: 1; }
-}
-
-/* ── Focus ───────────────────────────────────────────────────────── */
-input:focus, textarea:focus, button:focus-visible {
-  outline: 2px solid var(--indigo);
-  outline-offset: 2px;
-}
-input:focus, textarea:focus { outline: none; border-color: var(--indigo) !important; }
