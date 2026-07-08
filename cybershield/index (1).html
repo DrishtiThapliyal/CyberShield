@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CivicPulse AI — Smarter Reporting for Smarter Communities</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg,#0f172a,#1e293b); }
+  .glass { background: rgba(255,255,255,0.06); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+  .glow { box-shadow: 0 0 30px rgba(56,189,248,0.15); }
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-thumb { background: #38bdf8; border-radius: 8px; }
+  .badge-Critical { background:#7f1d1d; color:#fecaca; }
+  .badge-High { background:#7c2d12; color:#fed7aa; }
+  .badge-Medium { background:#78350f; color:#fde68a; }
+  .badge-Low { background:#14532d; color:#bbf7d0; }
+  .spinner { border: 3px solid rgba(255,255,255,.2); border-top-color:#38bdf8; border-radius:50%; width:20px; height:20px; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body class="min-h-screen text-white">
+
+<div class="max-w-5xl mx-auto px-4 py-8">
+
+  <!-- Header -->
+  <header class="text-center mb-8">
+    <h1 class="text-4xl font-bold bg-gradient-to-r from-sky-400 to-emerald-400 bg-clip-text text-transparent">CivicPulse AI</h1>
+    <p class="text-slate-300 mt-2">Smarter reporting for smarter, better-living communities</p>
+  </header>
+
+  <!-- API Key Setup -->
+  <div id="apiKeySection" class="glass rounded-xl p-4 mb-6">
+    <label class="block text-sm text-slate-300 mb-2">Gemini API Key (stored locally in your browser only)</label>
+    <div class="flex gap-2">
+      <input id="apiKeyInput" type="password" placeholder="Paste your Gemini API key"
+        class="flex-1 rounded-lg px-3 py-2 bg-slate-800 border border-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400" />
+      <button onclick="saveApiKey()" class="px-4 py-2 rounded-lg bg-sky-500 hover:bg-sky-400 text-sm font-semibold">Save</button>
+    </div>
+    <p class="text-xs text-slate-400 mt-1">Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" class="underline text-sky-400">aistudio.google.com/app/apikey</a></p>
+  </div>
+
+  <!-- Report Form -->
+  <div class="glass glow rounded-2xl p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-3">📢 Report a Community Issue</h2>
+    <textarea id="issueInput" rows="3" placeholder="e.g. There's a huge pothole near the main market that has caused two accidents this week..."
+      class="w-full rounded-lg px-3 py-2 bg-slate-800 border border-slate-600 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"></textarea>
+    <button onclick="analyzeIssue()" id="analyzeBtn"
+      class="mt-3 w-full py-2.5 rounded-lg bg-gradient-to-r from-sky-500 to-emerald-500 font-semibold hover:opacity-90 flex items-center justify-center gap-2">
+      <span id="btnText">Analyze with AI</span>
+    </button>
+    <div id="errorBox" class="hidden mt-3 text-sm text-red-300 bg-red-950/50 rounded-lg p-3"></div>
+  </div>
+
+  <!-- Result Preview -->
+  <div id="resultBox" class="hidden glass rounded-2xl p-6 mb-8">
+    <h2 class="text-xl font-semibold mb-3">✅ AI Analysis</h2>
+    <div id="resultContent" class="space-y-2 text-sm"></div>
+    <button onclick="submitIssue()" class="mt-4 px-4 py-2 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-sm font-semibold">Add to Community Dashboard</button>
+  </div>
+
+  <!-- Dashboard -->
+  <div class="glass rounded-2xl p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-semibold">🏙️ Community Dashboard</h2>
+      <div class="flex gap-3 text-xs text-slate-300">
+        <span id="statTotal">0 issues</span>
+        <span id="statCritical">0 critical</span>
+      </div>
+    </div>
+    <div id="issuesList" class="space-y-3">
+      <p class="text-slate-400 text-sm">No issues reported yet. Be the first to make your community smarter!</p>
+    </div>
+  </div>
+
+  <footer class="text-center text-slate-500 text-xs mt-10">Built for AI for Better Living & Smarter Communities Challenge</footer>
+</div>
+
+<script>
+let issues = JSON.parse(localStorage.getItem('civicpulse_issues') || '[]');
+let currentAnalysis = null;
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (key) {
+    localStorage.setItem('civicpulse_api_key', key);
+    document.getElementById('apiKeyInput').value = '';
+    document.getElementById('apiKeyInput').placeholder = '✓ Key saved';
+  }
+}
+
+function getApiKey() {
+  return localStorage.getItem('civicpulse_api_key') || '';
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.classList.remove('hidden');
+}
+
+function hideError() {
+  document.getElementById('errorBox').classList.add('hidden');
+}
+
+async function analyzeIssue() {
+  hideError();
+  const text = document.getElementById('issueInput').value.trim();
+  const apiKey = getApiKey();
+
+  if (!apiKey) { showError('Please save your Gemini API key first.'); return; }
+  if (!text) { showError('Please describe an issue first.'); return; }
+
+  const btnText = document.getElementById('btnText');
+  const btn = document.getElementById('analyzeBtn');
+  btn.disabled = true;
+  btnText.innerHTML = '<span class="spinner inline-block align-middle"></span> Analyzing...';
+
+  const prompt = `You are a civic issue triage assistant for a smart city platform. Analyze this citizen report and respond ONLY with valid JSON, no markdown, no backticks:
+{
+  "category": "one of: Sanitation, Infrastructure, Water Supply, Electricity, Safety, Traffic, Other",
+  "urgency": "one of: Low, Medium, High, Critical",
+  "department": "the local government department best suited to handle this",
+  "summary": "one sentence summary of the issue",
+  "formalComplaint": "a short, formal, ready-to-submit complaint paragraph (3-4 sentences) written on behalf of the citizen"
+}
+
+Citizen report: "${text}"`;
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(errData?.error?.message || `API error (${response.status})`);
+    }
+
+    const data = await response.json();
+    let raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    raw = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(raw);
+
+    currentAnalysis = { ...parsed, originalText: text, timestamp: new Date().toISOString() };
+    renderAnalysis(parsed);
+  } catch (err) {
+    showError('Something went wrong: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Analyze with AI';
+  }
+}
+
+function renderAnalysis(a) {
+  const box = document.getElementById('resultBox');
+  const content = document.getElementById('resultContent');
+  content.innerHTML = `
+    <div class="flex flex-wrap gap-2 mb-2">
+      <span class="px-3 py-1 rounded-full text-xs font-semibold badge-${a.urgency}">${a.urgency} Urgency</span>
+      <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-700">${a.category}</span>
+      <span class="px-3 py-1 rounded-full text-xs font-semibold bg-slate-700">${a.department}</span>
+    </div>
+    <p class="text-slate-300"><b>Summary:</b> ${a.summary}</p>
+    <div class="bg-slate-800/60 rounded-lg p-3 mt-2">
+      <p class="text-xs text-slate-400 mb-1">Formal Complaint Draft:</p>
+      <p class="text-slate-200 italic">"${a.formalComplaint}"</p>
+    </div>
+  `;
+  box.classList.remove('hidden');
+}
+
+function submitIssue() {
+  if (!currentAnalysis) return;
+  issues.unshift(currentAnalysis);
+  localStorage.setItem('civicpulse_issues', JSON.stringify(issues));
+  document.getElementById('issueInput').value = '';
+  document.getElementById('resultBox').classList.add('hidden');
+  currentAnalysis = null;
+  renderDashboard();
+}
+
+function urgencyRank(u) {
+  return { Critical: 4, High: 3, Medium: 2, Low: 1 }[u] || 0;
+}
+
+function renderDashboard() {
+  const list = document.getElementById('issuesList');
+  document.getElementById('statTotal').textContent = `${issues.length} issue${issues.length !== 1 ? 's' : ''}`;
+  document.getElementById('statCritical').textContent = `${issues.filter(i => i.urgency === 'Critical').length} critical`;
+
+  if (issues.length === 0) {
+    list.innerHTML = '<p class="text-slate-400 text-sm">No issues reported yet. Be the first to make your community smarter!</p>';
+    return;
+  }
+
+  const sorted = [...issues].sort((a, b) => urgencyRank(b.urgency) - urgencyRank(a.urgency));
+  list.innerHTML = sorted.map(i => `
+    <div class="bg-slate-800/50 rounded-lg p-3 flex justify-between items-start gap-3">
+      <div>
+        <div class="flex gap-2 mb-1">
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold badge-${i.urgency}">${i.urgency}</span>
+          <span class="px-2 py-0.5 rounded-full text-xs bg-slate-700">${i.category}</span>
+        </div>
+        <p class="text-sm text-slate-200">${i.summary}</p>
+        <p class="text-xs text-slate-400">→ Routed to: ${i.department}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+renderDashboard();
+</script>
+</body>
+</html>
